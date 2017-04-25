@@ -7,15 +7,23 @@
 //
 
 import UIKit
+import SVProgressHUD
+import Alamofire
+import AlamofireImage
+import MediaPlayer
+
 
 class ViewController: UIViewController {
     
-    
+    var arrEvent = NSMutableArray()
     @IBOutlet weak var cardView: UIView!
     @IBOutlet weak var cardView1: UIView!
+    
+    @IBOutlet weak var webView1: UIWebView!
+    @IBOutlet weak var webView: UIWebView!
+    
     var panGestureRecognizer:UIPanGestureRecognizer!
     var originalPoint: CGPoint!
-    var arrayCardModel = [ModelCard]()
     var index = 0
     
     @IBOutlet weak var imageView: UIImageView!
@@ -30,52 +38,84 @@ class ViewController: UIViewController {
         
         panGestureRecognizer = UIPanGestureRecognizer(target: self, action:#selector(ViewController.panGestureRecogn(gestureRecognizer:)))
         cardView.addGestureRecognizer(panGestureRecognizer)
+        //cardView.addSubview(cardView)
         
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.bounces = false
         
-        self.addCard()
-        //set front card data
-        self.setData(index: index)
-        index = index + 1
+        webView1.scrollView.isScrollEnabled = false
+        webView1.scrollView.bounces = false
         
-        //set previous card data
-        self.setData(index: index)
+        SVProgressHUD.setDefaultStyle(SVProgressHUDStyle.light)
+        SVProgressHUD.show()
+        
+        let url = "http://data.in.bookmyshow.com/getData.aspx?cc=&cmd=GETEVENTLIST&dt=&et=MT&f=json&lg=72.842588&lt=19.114186&rc=MUMBAI&sr=&t=a54a7b3aba576256614a"
+        
+        self.setBlur(view: self.cardView)
+        self.setBlur(view: self.cardView1)
+        APIUtilities.sharedInstance.request(url: url, method: .get, parameters: [:], parameterEncoding: JSONEncoding.default, header: [:],completion: {(request,response,data) in
+            let bookMyShow =  data.value as! NSDictionary
+            let movieArray = bookMyShow.value(forKeyPath: "BookMyShow.arrEvent") as! NSArray
+           
+            self.arrEvent = NSMutableArray()
+            for event in movieArray {
+                let e = event as! NSDictionary
+                let objEvent = ArrEvent()
+                objEvent.eventTitle = e.value(forKey: "EventTitle") as! NSString
+                objEvent.bannerURL = e.value(forKey: "BannerURL") as! NSString
+                objEvent.director = e.value(forKey: "Director") as! NSString
+                objEvent.actors = e.value(forKey: "Actors") as! NSString
+                objEvent.trailerURL = e.value(forKey: "TrailerURL") as! NSString
+                self.arrEvent.add(objEvent)
+            }
+            
+            self.setData(index: self.index)
+            self.index = self.index + 1
+            self.setData(index: self.index)
+            SVProgressHUD.dismiss()
+        });
+        
+        self.cardView.transform = CGAffineTransform(rotationAngle: 0);
+        self.cardView1.transform = CGAffineTransform(rotationAngle: 0.05);
     }
     
-    
-//MARK: Add card
-    func addCard(){
-        
-        // add data in array
-        let card1 = ModelCard()
-        card1.image = "img1.jpg"
-        card1.name = " Tester"
-        arrayCardModel.append(card1)
-        
-        let card2 = ModelCard()
-        card2.image = "img2.jpg"
-        card2.name = " Tester1"
-        arrayCardModel.append(card2)
-        
-        let card3 = ModelCard()
-        card3.image = "img3.jpg"
-        card3.name = " Jatin"
-        arrayCardModel.append(card3)
-        
-    
+   
+//MARK: set blur view
+    func setBlur(view : UIView){
+        view.layer.cornerRadius = 8;
+        view.layer.shadowOffset = CGSize(width:7,height: 7);
+        view.layer.shadowRadius = 5;
+        view.layer.shadowOpacity = 0.5;
     }
     
-//MARK : Set card data
+//MARK: set data for views
     func setData(index:Int){
-    
+        print(index)
         if(isActiveChange){
-            imageView.image = UIImage(named: arrayCardModel[index].image)
-            lblName.text = arrayCardModel[index].name
+            let objEvent = self.arrEvent.object(at: index) as! ArrEvent
+            imageView.af_setImage(withURL: URL(string: objEvent.bannerURL as String)!)
+            lblName.text = objEvent.eventTitle as String
+            if(objEvent.trailerURL.length > 0){
+                webView.loadRequest(URLRequest(url: URL(string: objEvent.trailerURL as String)!))
+            }
+            print(objEvent.eventTitle)
+            print(objEvent.trailerURL)
+            self.imageView.isHidden = false;
             isActiveChange = false
         } else {
-            imageView1.image = UIImage(named: arrayCardModel[index].image)
-            lblName1.text = arrayCardModel[index].name
+            let objEvent = self.arrEvent.object(at: index) as! ArrEvent
+            imageView1.af_setImage(withURL: URL(string: objEvent.bannerURL as String)!)
+            lblName1.text =  objEvent.eventTitle as String
+            if(objEvent.trailerURL.length > 0){
+                webView1.loadRequest(URLRequest(url: URL(string: objEvent.trailerURL as String)!))
+            }
+            print(objEvent.eventTitle)
+            print(objEvent.trailerURL)
+            self.imageView1.isHidden = false;
             isActiveChange = true
         }
+        webView.isHidden = true;
+        webView1.isHidden = true;
         self.view.layoutIfNeeded()
     }
     
@@ -83,8 +123,7 @@ class ViewController: UIViewController {
         cardView.center = cardView.center
     }
     
-    
-//MARK: create card view dynamic
+//MARK: Create dynamic card view
     func createCardView() -> UIView {
         let width = self.view.frame.width * 0.5
         let height = self.view.frame.height * 0.5
@@ -99,7 +138,7 @@ class ViewController: UIViewController {
         return tempCardView
     }
     
-//MARK: Pan Gesture Recognizer
+//MARK: UIPanGestureRecognizer handling
     func panGestureRecogn(gestureRecognizer: UIPanGestureRecognizer) {
         let xDistance = gestureRecognizer.translation(in: self.view).x
         let yDistance = gestureRecognizer.translation(in: self.view).y
@@ -117,10 +156,10 @@ class ViewController: UIViewController {
             
         case .ended:
             if(xDistance >= 200 || (xDistance <= -180)) {
-                if(index >= self.arrayCardModel.count-1){
-                    index = 0
+                if(self.index >= self.arrEvent.count-1){
+                    self.index = 0
                 } else {
-                    index = index + 1
+                    self.index = self.index + 1
                 }
                 if(isActiveChange){
                     cardView.isHidden = true;
@@ -137,7 +176,8 @@ class ViewController: UIViewController {
                     cardView1.isHidden = false;
                     self.cardView1.transform = CGAffineTransform(rotationAngle: 0);
                 }
-                setData(index: index)
+                
+                setData(index: self.index)
             }
            resetViewPositionAndTransformations()
             break
@@ -147,8 +187,8 @@ class ViewController: UIViewController {
         }
     }
     
-//MARK: Update view distance
     
+//MARK: handle distance of card with cardview with main view
     func updateCardViewWithDistances(xDistance:CGFloat, _ yDistance:CGFloat) {
         let rotationStrength = min(xDistance / 320, 1)
         let fullCircle = (CGFloat)(2*M_PI)
@@ -172,16 +212,49 @@ class ViewController: UIViewController {
         }
     }
     
-//MARK: ResetViewPositionAndTransformations
+//MARK: handle youtube video url.
+    @IBAction func watchYoutubeTrailer(_ sender: AnyObject) {
+        SVProgressHUD.setDefaultStyle(SVProgressHUDStyle.light)
+        SVProgressHUD.show()
+         if(isActiveChange){
+            webView.isHidden = false
+            let objEvent = self.arrEvent.object(at: self.index) as! ArrEvent
+            if(objEvent.trailerURL.length > 0){
+                UIView.transition(with: imageView, duration: 0.4, options: .transitionCrossDissolve, animations: {() -> Void in
+                    self.imageView.isHidden = true
+                }, completion: { _ in
+                    self.webView1.isHidden = false;
+                })
+                //imageView.isHidden = true
+            }
+         }else {
+            
+            let objEvent = self.arrEvent.object(at: self.index) as! ArrEvent
+            if(objEvent.trailerURL.length > 0){
+                UIView.transition(with: imageView1, duration: 0.4, options: .transitionCrossDissolve, animations: {() -> Void in
+                    self.imageView1.isHidden = true
+                    }, completion: { _ in
+                            self.webView1.isHidden = false;
+                })
+            }
+         }
+        SVProgressHUD.dismiss()
+    }
+    
+//MARK: reset the view postions. 
     func resetViewPositionAndTransformations() {
         UIView.animate(withDuration: 0.2, animations: {
             if(self.isActiveChange){
                 self.cardView.center = self.originalPoint;
+                self.cardView.transform = CGAffineTransform(rotationAngle: 0);
+                self.cardView1.transform = CGAffineTransform(rotationAngle: 0.05);
             } else {
                 self.cardView1.center = self.originalPoint;
+                self.cardView.transform = CGAffineTransform(rotationAngle: 0.05);
+                self.cardView1.transform = CGAffineTransform(rotationAngle: 0);
             }
-            self.cardView.transform = CGAffineTransform(rotationAngle: 0);
-            self.cardView1.transform = CGAffineTransform(rotationAngle: 0);
+            
+           
         })
     }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Bucket
-   type = "1"
+   type = "0"
    version = "2.0">
    <Breakpoints>
       <BreakpointProxy
@@ -13,9 +13,9 @@
             timestampString = "514772814.738891"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "165"
-            endingLineNumber = "165"
-            landmarkName = "panGestureRecogn(gestureRecognizer:)"
+            startingLineNumber = "61"
+            endingLineNumber = "61"
+            landmarkName = "viewDidLoad()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -29,9 +29,9 @@
             timestampString = "514772814.738891"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "172"
-            endingLineNumber = "172"
-            landmarkName = "panGestureRecogn(gestureRecognizer:)"
+            startingLineNumber = "219"
+            endingLineNumber = "219"
+            landmarkName = "watchYoutubeTrailer(_:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
